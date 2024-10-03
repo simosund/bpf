@@ -33,11 +33,13 @@ int parse_test_list_file(const char *path,
 			 bool is_glob_pattern);
 
 __u64 read_perf_max_sample_freq(void);
-int load_bpf_testmod(bool verbose);
-int unload_bpf_testmod(bool verbose);
+int load_bpf_testmod(void);
+int unload_bpf_testmod(void);
 int kern_sync_rcu(void);
 int finit_module(int fd, const char *param_values, int flags);
 int delete_module(const char *name, int flags);
+int load_module(const char *path);
+int unload_module(const char *name);
 
 static inline __u64 get_time_ns(void)
 {

@@ -367,7 +367,9 @@ int delete_module(const char *name, int flags)
 	return syscall(__NR_delete_module, name, flags);
 }
 
-int unload_bpf_testmod(bool verbose)
+int env_verbosity __weak = 0;
+
+int unload_module(const char* name)
 {
 	int ret, cnt = 0;
 
@@ -375,11 +377,11 @@ int unload_bpf_testmod(bool verbose)
 		fprintf(stdout, "Failed to trigger kernel-side RCU sync!\n");
 
 	for (;;) {
-		ret = delete_module("bpf_testmod", 0);
+		ret = delete_module(name, 0);
 		if (!ret || errno != EAGAIN)
 			break;
 		if (++cnt > 10000) {
-			fprintf(stdout, "Unload of bpf_testmod timed out\n");
+			fprintf(stdout, "Unload of %s timed out\n", name);
 			break;
 		}
 		usleep(100);
@@ -387,40 +389,50 @@ int unload_bpf_testmod(bool verbose)
 
 	if (ret) {
 		if (errno == ENOENT) {
-			if (verbose)
-				fprintf(stdout, "bpf_testmod.ko is already unloaded.\n");
+			if (env_verbosity > VERBOSE_NONE)
+				fprintf(stdout, "%s.ko is already unloaded.\n", name);
 			return -1;
 		}
-		fprintf(stdout, "Failed to unload bpf_testmod.ko from kernel: %d\n", -errno);
+		fprintf(stdout, "Failed to unload %s.ko from kernel: %d\n", name, -errno);
 		return -1;
 	}
-	if (verbose)
-		fprintf(stdout, "Successfully unloaded bpf_testmod.ko.\n");
+	if (env_verbosity > VERBOSE_NONE)
+		fprintf(stdout, "Successfully unloaded %s.ko.\n", name);
 	return 0;
 }
 
-int load_bpf_testmod(bool verbose)
+int load_module(const char *path)
 {
 	int fd;
 
-	if (verbose)
-		fprintf(stdout, "Loading bpf_testmod.ko...\n");
+	if (env_verbosity > VERBOSE_NONE)
+		fprintf(stdout, "Loading %s...\n", path);
 
-	fd = open("bpf_testmod.ko", O_RDONLY);
+	fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		fprintf(stdout, "Can't find bpf_testmod.ko kernel module: %d\n", -errno);
+		fprintf(stdout, "Can't find %s kernel module: %d\n", path, -errno);
 		return -ENOENT;
 	}
 	if (finit_module(fd, "", 0)) {
-		fprintf(stdout, "Failed to load bpf_testmod.ko into the kernel: %d\n", -errno);
+		fprintf(stdout, "Failed to load %s into the kernel: %d\n", path, -errno);
 		close(fd);
 		return -EINVAL;
 	}
 	close(fd);
 
-	if (verbose)
-		fprintf(stdout, "Successfully loaded bpf_testmod.ko.\n");
+	if (env_verbosity > VERBOSE_NONE)
+		fprintf(stdout, "Successfully loaded %s.\n", path);
 	return 0;
+}
+
+int unload_bpf_testmod(void)
+{
+	return unload_module("bpf_testmod");
+}
+
+int load_bpf_testmod(void)
+{
+	return load_module("bpf_testmod.ko");
 }
 
 /*

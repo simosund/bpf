@@ -1765,9 +1765,9 @@ static int do_test(bool unpriv, unsigned int from, unsigned int to)
 	int i, passes = 0, errors = 0;
 
 	/* ensure previous instance of the module is unloaded */
-	unload_bpf_testmod(verbose);
+	unload_bpf_testmod();
 
-	if (load_bpf_testmod(verbose))
+	if (load_bpf_testmod())
 		return EXIT_FAILURE;
 
 	for (i = from; i < to; i++) {
@@ -1797,7 +1797,7 @@ static int do_test(bool unpriv, unsigned int from, unsigned int to)
 		}
 	}
 
-	unload_bpf_testmod(verbose);
+	unload_bpf_testmod();
 	kfuncs_cleanup();
 
 	printf("Summary: %d PASSED, %d SKIPPED, %d FAILED\n", passes,
